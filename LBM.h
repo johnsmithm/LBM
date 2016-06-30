@@ -88,7 +88,27 @@ class LatticeB{
 		* get the x component of velocity
 		*/
 		void getResult(){
+			pair<double , double> u = mp(0.,0.);
 
+			forr(i,1,nrCellsY-1){
+				forr(j,1,nrCellsX-1){
+					// if ball continue
+					q = 0.;
+					u = mp(0.,0.);
+					forn(k,9)
+						q+=domain[i][j][k];
+					forn(k,9){
+						u.x += domain[i][j][k]*neighbours[k].x;						
+						u.y += domain[i][j][k]*neighbours[k].y;
+					}
+					u.x /= q;
+					//cerr<<u.x<<" ";
+					u.y /= q;
+				}
+				//cerr<<"\n";
+			}
+
+					
 		}
 
 	private:
@@ -145,6 +165,7 @@ class LatticeB{
 				forr(j,1,nrCellsX-1){
 					// if ball continue
 					q = 0.;
+					u = mp(0.,0.);
 					forn(k,9)
 						q+=domain[i][j][k];
 					forn(k,9){
@@ -158,7 +179,7 @@ class LatticeB{
 						double pr = neighbours[k].x*u.x+neighbours[k].y*u.y;
 						double u2 = u.x*u.x+u.y*u.y;
 						feq[k] = w[k]*q*(1.+ 3*pr + ((9.*pr*pr)/2.)- (3.*u2)/2.);
-						domain[i][j][k] -= w[k]*(domain[i][j][k]-feq[k])+3.*w[k]*q*(neighbours[k].x*acc+neighbours[k].y*acc);//??
+						domain[i][j][k] -= w[k]*(domain[i][j][k]-feq[k])+3.*w[k]*q*(neighbours[k].y*0.+neighbours[k].x*acc);//??
 					}
 				}
 		}
