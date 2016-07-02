@@ -5,6 +5,7 @@
 #include <string>
 #include <fstream>
 #include <list>
+#include <set>
 #include <iomanip>
 
 using namespace std;
@@ -35,17 +36,25 @@ vi getParameters(vi given, vi cylinder){
 	dt = 0.0000001;
 	vis = given[0] * (dt/(dx*dx));
 	w = 1./(3.*vis+0.5);
-	cerr<<"w0:"<<w<<" vis0:"<<vis<<"\n";
-	while(w<=1.8){
+	//cerr<<"w0:"<<w<<" vis0:"<<vis<<"\n";
+	while(w>=1.98){
 		dt *= 10.;		
 		vis = given[0] * (dt/(dx*dx));
 		w = 1./(3.*vis+0.5);
+		//<<"w<"<<w<<"\n";
 	}
+
+	cerr<<"w:"<<w<<" vis:"<<vis<<"\n";
+	cerr<<"dt:"<<dt<<" dx:"<<dx<<"\n";
+
 	acc = given[1] * ((dt*dt)/dx);
 	int nrCellsX = cylinder[0] / dx;
 	int ballCenterX = cylinder[2] / dx;
 	int ballCenterY = cylinder[3] / dx;
 	int ballDiameter = cylinder[4] / dx;
+
+	cerr<<"ballDiameter:"<<ballDiameter<<" x:"<<ballCenterX<<" y:"<<ballCenterY<<"\n";
+
 	vi result({dt, dx, acc, (double)nrCellsX, given[2], (double)ballCenterX, (double)ballCenterY, (double)ballDiameter });
 	return result;
 }
@@ -82,6 +91,7 @@ class LatticeB{
 				periodicBoundaryHandler();
 				
 				noSlipBoundaryHandler();//
+				//return;
 				if(i==2)//debug
 					showTest("it2",0,0,5);
 				streamStep();//
@@ -101,6 +111,8 @@ class LatticeB{
 			ofstream cerrr("result.out");
 
 			pair<double , double> u = mp(0.,0.);
+			//map<double,int> dd;
+			//int nr = 0;
 
 			forr(i,1,nrCellsY-1){
 				forr(j,1,nrCellsX-1){
@@ -118,13 +130,53 @@ class LatticeB{
 						u.y += domain[i][j][k]*neighbours[k].y;
 					}
 					u.x /= q;
+					cerrr<<i<<" "<<j<<" ";
+					if(ballCells.count(mp(i,j))==0)
 					cerrr<<u.x<<" ";
-					u.y /= q;
+					else cerrr<<"0.0";
+					cerrr<<"\n";
+					//if(ballCells.count(mp(i,j))!=0) continue;
+
+					//if(dd.count(u.x)==0)dd[u.x]= nr++;
+
+					
+					//cerrr<<dd[u.x]<<" ";else cerrr<< "--";//plot with gnuplot
+
+					
 
 					//return;
 				}
-				cerrr<<"\n";
+				//cerrr<<"\n";
 			}
+
+			//for(auto p : dd)
+				//cerrr<<p.y<<"-"<<p.x<<"|";
+
+/*
+			forr(i,1,nrCellsY-1){
+				forr(j,1,nrCellsX-1){
+					double q = 0.;
+					u = mp(0.,0.);
+					forn(k,9)
+						q+=domain[i][j][k];
+					//assert(q>0.5 && q<1.5);
+					//cerr<<"q="<<q<<"\n";
+					forn(k,9){
+
+						//cerr<<k<<" "<<domain[i][j][k]<<" n1:"<<neighbours[k].x<<" "<<neighbours[k].y<<"\n";
+						u.x += domain[i][j][k]*neighbours[k].x;//??				
+						u.y += domain[i][j][k]*neighbours[k].y;
+					}
+					u.x /= q;
+
+					if(dd.count(u.x)==0)
+						cerr<<"-";
+					else
+						cerr<<((int)(((double)dd[u.x]/nr)*10));
+				}
+				cerr<<"\n";
+			}*/
+
 			cerrr.close();
 					
 		}
@@ -161,15 +213,31 @@ class LatticeB{
 		void initiate(){
 			domain.assign(nrCellsY+1, vector<vector<double> >(nrCellsX+1, vector<double>(9,0.)));
 			domainHelper.assign(nrCellsY+1, vector<vector<double> >(nrCellsX+1, vector<double>(9,0.)));
-			forr(i,1,nrCellsY-1)
+			
+
+			size_t raza = (ballDiameter / 2) + 1;
+			forr(i,ballCenterY-raza, ballCenterY+raza)
+				forr(j,ballCenterX - raza, ballCenterX + raza)
+					{
+						assert(i>=1 && i<(size_t)nrCellsY && j >=1 && j<(size_t)nrCellsX);
+						size_t ds = (i-ballCenterY)*(i-ballCenterY) + (j-ballCenterX)*(j-ballCenterX);
+						if(raza*raza >= ds){
+							ballCells.insert(mp(i,j));
+						}
+					}
+
+			forr(i,1,nrCellsY-1){
 				forr(j,1,nrCellsX-1){
 					for(int k=0;k<9;++k)						 
 						domain[i][j][k] = w[k];
 					// 0 1 2
 					// 7 8 3
 					// 6 5 4
+					if(ballCells.count(mp(i,j))==0)cerr<<1;
+					else cerr<<0;
 				}
-
+				cerr<<"\n";
+			}
 		}
 		void periodicBoundaryHandler(){
 			forr(i,1,nrCellsY-1)
@@ -187,7 +255,14 @@ class LatticeB{
 					domain[nrCellsY][i+neighbours[j].x][4+j] = domain[nrCellsY - 1][i][j];//last
 				}
 
-			//ToDo ballCell
+			//ballCells
+			for(auto p : ballCells){
+				forn(k,9)
+					if(ballCells.count(mp(p.x+neighbours[k].y,p.y+neighbours[k].x))==0){
+						//size_t id = (k%2==1?(k+4)%8:(k+4)%8);
+						domain[p.x][p.y][(k+4)%8] = domain[p.x + neighbours[k].y][p.y+neighbours[k].x][k];						
+					}
+			}
 
 		}
 		void streamStep(){
@@ -195,6 +270,7 @@ class LatticeB{
 			forr(i,1,nrCellsY-1)
 				forr(j,1,nrCellsX-1){
 					// if ball continue;
+					if(ballCells.count(mp(i,j))!=0)continue;
 					forn(q,9){
 						//if(i == 1 && j == 1)cerr<<domainHelper[i][j][q]<<" - ";
 						domainHelper[i][j][q] = domain[i-neighbours[q].y][j-neighbours[q].x][q];	
@@ -219,6 +295,7 @@ class LatticeB{
 			forr(i,1,nrCellsY-1)
 				forr(j,1,nrCellsX-1){
 					// if ball continue
+					if(ballCells.count(mp(i,j))!=0)continue;
 					q = 0.;
 					u = mp(0.,0.);
 					forn(k,9)
@@ -247,4 +324,5 @@ class LatticeB{
 		vi w;
 		vi feq;
 		ma domain, domainHelper;
+		set<pair<int,int> > ballCells;
 };
