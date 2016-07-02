@@ -215,7 +215,7 @@ class LatticeB{
 			domainHelper.assign(nrCellsY+1, vector<vector<double> >(nrCellsX+1, vector<double>(9,0.)));
 			
 
-			size_t raza = (ballDiameter / 2) + 1;
+			size_t raza = (ballDiameter / 2) ;
 			forr(i,ballCenterY-raza, ballCenterY+raza)
 				forr(j,ballCenterX - raza, ballCenterX + raza)
 					{
@@ -256,7 +256,7 @@ class LatticeB{
 				}
 
 			//ballCells
-			for(auto p : ballCells){
+			for(auto p : ballCells){// px - Y, py - X
 				forn(k,9)
 					if(ballCells.count(mp(p.x+neighbours[k].y,p.y+neighbours[k].x))==0){
 						//size_t id = (k%2==1?(k+4)%8:(k+4)%8);
