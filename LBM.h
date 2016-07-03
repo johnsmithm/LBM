@@ -62,7 +62,7 @@ vi getParameters(vi given, vi cylinder){
 		cerr<<"domain:"<<nrCellsX<<"X"<<given[2]<<"\n";
 	#endif
 
-	vi result({dt, dx, acc, (double)nrCellsX, given[2], (double)ballCenterX, (double)ballCenterY, (double)ballDiameter });
+	vi result({dt, dx, acc, (double)nrCellsX, given[2], (double)ballCenterX, (double)ballCenterY, (double)ballDiameter, w });
 	return result;
 }
 
@@ -85,7 +85,9 @@ class LatticeB{
 			 nrCellsY=param[4]+1;
 			 ballCenterX=param[5];//??
 			 ballCenterY=param[6];
-			 ballDiameter=param[7];				// lt 0    ct1  rt2   3rc   4rb     5cb    6lb    7 lc    cc
+			 ballDiameter=param[7];		
+			 W = param[8];	                	// lt 0    ct1  rt2   3rc   4rb     5cb    6lb    7 lc    cc
+			 cerr<<"W:"<<W<<"\n";
 			 neighbours = vector<pair<int,int> >({{-1,1},{0,1},{1,1},{1,0},{1,-1},{0,-1},{-1,-1},{-1,0},{0,0}});// x,y
 			 w = vector<double>({1./36.,1./9, 1./36.,1./9, 1./36.,1./9, 1./36.,1./9, 4./9.});
 			 feq = vector<double>(9,0.);
@@ -98,7 +100,7 @@ class LatticeB{
 		void run(int nr){
 			
 			initiate();
-			
+			//return;
 			forn(i,nr){
 				periodicBoundaryHandler();
 				
@@ -109,6 +111,7 @@ class LatticeB{
 						showTest("it2",0,0,5);
 				#endif
 				streamStep();//
+			//	return;
 				#ifdef DEBUG
 					if(i==2)//debuf
 						showTest("it2a",0,0,5);
@@ -247,13 +250,13 @@ class LatticeB{
 					// 0 1 2
 					// 7 8 3
 					// 6 5 4
-					#ifdef DEBUG
+					/*#ifdef DEBUG
 						if(ballCells.count(mp(i,j))==0)cerr<<1;
 						else cerr<<0;
-					#endif
+					#endif*/
 				}
 				#ifdef DEBUG
-					cerr<<"\n";
+					//cerr<<"\n";
 				#endif
 			}
 		}
@@ -329,15 +332,30 @@ class LatticeB{
 						double pr = neighbours[k].x*u.x+neighbours[k].y*u.y;
 						double u2 = u.x*u.x+u.y*u.y;
 						feq[k] = w[k]*q*(1.+ 3.*pr + ((9.*pr*pr)/2.)- (3.*u2)/2.);
+						
 						//if((i == 1||i==(size_t)nrCellsY) && j == 1)cerr<<i<<" "<<feq[k]<<"f - d:";
-						domain[i][j][k] = domain[i][j][k] - w[k]*(domain[i][j][k]-feq[k])+3.*w[k]*q*(neighbours[k].x!=20?acc*neighbours[k].x:1.);//(neighbours[k].y*0+neighbours[k].x*acc);//??
+						domain[i][j][k] = domain[i][j][k] - W*(domain[i][j][k]-feq[k])+3.*w[k]*q*(neighbours[k].x!=0?acc*neighbours[k].x+acc*0:0);//(neighbours[k].y*0+neighbours[k].x*acc);//??
 						//if((i == 1||i==(size_t)nrCellsY) && j == 1)cerr<<i<<" "<<domain[i][j][k]<<"\n";
 					}
+
+					//test
+					#ifdef DEBUG
+						q = 0.;
+						//u = mp(0.,0.);
+
+						forn(k,9)
+							q+=domain[i][j][k];
+
+						if(q>1.5 || q<0.3){cerr<<q<<" error\n"; 
+						cerr<<"v:"<<u.x<<" "<<u.y<<"\n";
+						  forn(k,9) cerr<<domain[i][j][k]<<" f:"<<feq[k]<<"\n";
+						return;}
+					#endif
 				}
 		}
 
 		int nrCellsY, nrCellsX, ballCenterX, ballCenterY, ballDiameter;
-		double dx, dt, acc ;
+		double dx, dt, acc , W;
 		vector<pair<int,int> > neighbours;
 		vi w;
 		vi feq;
