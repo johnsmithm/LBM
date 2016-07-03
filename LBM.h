@@ -22,6 +22,8 @@ typedef vector<double > vi;
 #define forn(i,n) for(size_t i=0;i<(size_t)(n);++i)
 #define forr(i,a,n) for(size_t i=a;i<=(size_t)n;++i)
 
+#define DEBUG
+
 /**
  * get the lattice parameter from real parameters
  *
@@ -44,8 +46,10 @@ vi getParameters(vi given, vi cylinder){
 		//<<"w<"<<w<<"\n";
 	}
 
-	cerr<<"w:"<<w<<" vis:"<<vis<<"\n";
-	cerr<<"dt:"<<dt<<" dx:"<<dx<<"\n";
+	#ifdef DEBUG
+		cerr<<"w:"<<w<<" vis:"<<vis<<"\n";
+		cerr<<"dt:"<<dt<<" dx:"<<dx<<"\n";
+	#endif
 
 	acc = given[1] * ((dt*dt)/dx);
 	int nrCellsX = cylinder[0] / dx;
@@ -53,7 +57,10 @@ vi getParameters(vi given, vi cylinder){
 	int ballCenterY = cylinder[3] / dx;
 	int ballDiameter = cylinder[4] / dx;
 
-	cerr<<"ballDiameter:"<<ballDiameter<<" x:"<<ballCenterX<<" y:"<<ballCenterY<<"\n";
+	#ifdef DEBUG
+		cerr<<"ballDiameter:"<<ballDiameter<<" x:"<<ballCenterX<<" y:"<<ballCenterY<<"\n";
+		cerr<<"domain:"<<nrCellsX<<"X"<<given[2]<<"\n";
+	#endif
 
 	vi result({dt, dx, acc, (double)nrCellsX, given[2], (double)ballCenterX, (double)ballCenterY, (double)ballDiameter });
 	return result;
@@ -68,7 +75,12 @@ class LatticeB{
 				//cerr<<param[i]<<"\n";
 			 dt=param[0];
 			 dx=param[1];
-			 acc=param[2];cerr<<"acc:"<<acc<<"\n";
+			 acc=param[2];
+
+			 #ifdef DEBUG
+			 	cerr<<"acc:"<<acc<<"\n";
+			 #endif
+
 			 nrCellsX=param[3]+1;
 			 nrCellsY=param[4]+1;
 			 ballCenterX=param[5];//??
@@ -92,13 +104,15 @@ class LatticeB{
 				
 				noSlipBoundaryHandler();//
 				//return;
-				if(i==2)//debug
-					showTest("it2",0,0,5);
+				#ifdef DEBUG
+					if(i==2)//debug
+						showTest("it2",0,0,5);
+				#endif
 				streamStep();//
-
-				if(i==2)//debuf
-					showTest("it2a",0,0,5);
-
+				#ifdef DEBUG
+					if(i==2)//debuf
+						showTest("it2a",0,0,5);
+				#endif
 				collideStep();
 				//return;
 			}
@@ -115,7 +129,7 @@ class LatticeB{
 			//int nr = 0;
 
 			forr(i,1,nrCellsY-1){
-				forr(j,1,nrCellsX-1){
+				forr(j,30,38){
 					// if ball continue
 					double q = 0.;
 					u = mp(0.,0.);
@@ -130,11 +144,11 @@ class LatticeB{
 						u.y += domain[i][j][k]*neighbours[k].y;
 					}
 					u.x /= q;
-					cerrr<<i<<" "<<j<<" ";
+					//cerrr<<i<<" "<<j<<" ";
 					if(ballCells.count(mp(i,j))==0)
-					cerrr<<u.x<<" ";
-					else cerrr<<"0.0";
-					cerrr<<"\n";
+					cerrr<<setw(13)<<left<<u.x<<" ";
+					else cerrr<<setw(13)<<left<<"0.0"<<" ";
+					//cerrr<<"\n";
 					//if(ballCells.count(mp(i,j))!=0) continue;
 
 					//if(dd.count(u.x)==0)dd[u.x]= nr++;
@@ -146,7 +160,7 @@ class LatticeB{
 
 					//return;
 				}
-				//cerrr<<"\n";
+				cerrr<<"\n";
 			}
 
 			//for(auto p : dd)
@@ -233,10 +247,14 @@ class LatticeB{
 					// 0 1 2
 					// 7 8 3
 					// 6 5 4
-					if(ballCells.count(mp(i,j))==0)cerr<<1;
-					else cerr<<0;
+					#ifdef DEBUG
+						if(ballCells.count(mp(i,j))==0)cerr<<1;
+						else cerr<<0;
+					#endif
 				}
-				cerr<<"\n";
+				#ifdef DEBUG
+					cerr<<"\n";
+				#endif
 			}
 		}
 		void periodicBoundaryHandler(){
@@ -312,7 +330,7 @@ class LatticeB{
 						double u2 = u.x*u.x+u.y*u.y;
 						feq[k] = w[k]*q*(1.+ 3.*pr + ((9.*pr*pr)/2.)- (3.*u2)/2.);
 						//if((i == 1||i==(size_t)nrCellsY) && j == 1)cerr<<i<<" "<<feq[k]<<"f - d:";
-						domain[i][j][k] = domain[i][j][k] - w[k]*(domain[i][j][k]-feq[k])+3.*w[k]*q*(neighbours[k].y==1?acc*neighbours[k].x:1.);//(neighbours[k].y*0+neighbours[k].x*acc);//??
+						domain[i][j][k] = domain[i][j][k] - w[k]*(domain[i][j][k]-feq[k])+3.*w[k]*q*(neighbours[k].x!=20?acc*neighbours[k].x:1.);//(neighbours[k].y*0+neighbours[k].x*acc);//??
 						//if((i == 1||i==(size_t)nrCellsY) && j == 1)cerr<<i<<" "<<domain[i][j][k]<<"\n";
 					}
 				}
