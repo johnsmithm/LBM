@@ -107,16 +107,17 @@ class LatticeB{
 				noSlipBoundaryHandler();//
 				//return;
 				#ifdef DEBUG
-					if(i==2)//debug
+					if(i==1)//debug
 						showTest("it2",0,0,5);
 				#endif
 				streamStep();//
 			//	return;
 				#ifdef DEBUG
-					if(i==2)//debuf
+					if(i==1)//debuf
 						showTest("it2a",0,0,5);
 				#endif
 				collideStep();
+				//cerr<<"iteration "<<i<<"\n";
 				//return;
 			}
 		}
@@ -201,13 +202,18 @@ class LatticeB{
 		void showTest(string name, int bY, int bX, int eX){
 			ofstream out(name);
 			out << setprecision(6) << fixed;
-			forr(i,bY,bY+3)
+			forr(i,5,10)
 			{
 				forn(k,9){
 					out<<k<<"| ";
-					forr(j,bX,eX)out<<domain[i][j][k]<<" ";
-					out<<"---";
-					forr(j,nrCellsX-5,nrCellsX-1)out<<domain[i][j][k]<<" ";
+
+					forr(j,25,35){
+						out<<domain[i][j][k];
+						if(ballCells.count(mp(i,j))!=0)out<<"* ";
+						else out<<"  ";
+					}
+					//out<<"---";
+				//	forr(j,nrCellsX-5,nrCellsX-1)out<<domain[i][j][k]<<" ";
 					out<<"|"<<k<<"\n";
 				}
 				out<<"\n";
@@ -280,8 +286,9 @@ class LatticeB{
 			for(auto p : ballCells){// px - Y, py - X
 				forn(k,9)
 					if(ballCells.count(mp(p.x+neighbours[k].y,p.y+neighbours[k].x))==0){
+						//cerr<<"cell;"<<p.x<<" "<<p.y<<" ballN:"<<(p.x+neighbours[k].y)<<" "<<p.y+neighbours[k].x<<"\n";
 						//size_t id = (k%2==1?(k+4)%8:(k+4)%8);
-						domain[p.x][p.y][(k+4)%8] = domain[p.x + neighbours[k].y][p.y+neighbours[k].x][k];						
+						domain[p.x][p.y][k] = domain[p.x + neighbours[k].y][p.y+neighbours[k].x][(k+4)%8];						
 					}
 			}
 
@@ -350,6 +357,18 @@ class LatticeB{
 						cerr<<"v:"<<u.x<<" "<<u.y<<"\n";
 						  forn(k,9) cerr<<domain[i][j][k]<<" f:"<<feq[k]<<"\n";
 						return;}
+
+						u = mp(0.,0.);
+					forn(k,9){//correct
+						u.x += domain[i][j][k]*neighbours[k].x;						
+						u.y += domain[i][j][k]*neighbours[k].y;
+						feq[k] = 0.;
+					}
+					if(u.x < 0 ){
+						cerr<<i<<" "<<j<<" - reverse velosity\n";
+						//forn(k,9) cerr<<"b:"<<domainHelper[i][j][k]<<" a:"<<domain[i][j][k]<<" f:"<<feq[k]<<"\n";
+						//exit(0);
+					}
 					#endif
 				}
 		}
