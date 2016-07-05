@@ -34,12 +34,12 @@ typedef vector<double > vi;
 vi getParameters(vi given, vi cylinder){
 	
 	double dt, dx, w, acc, vis;
-	dx = cylinder[1] / given[2];
-	dt = 0.0000001;
+	dx = cylinder[4] / given[2];
+	dt = 0.000000001;
 	vis = given[0] * (dt/(dx*dx));
 	w = 1./(3.*vis+0.5);
 	//cerr<<"w0:"<<w<<" vis0:"<<vis<<"\n";
-	while(w>=1.98){
+	while(w>=1.8){
 		dt *= 10.;		
 		vis = given[0] * (dt/(dx*dx));
 		w = 1./(3.*vis+0.5);
@@ -53,16 +53,17 @@ vi getParameters(vi given, vi cylinder){
 
 	acc = given[1] * ((dt*dt)/dx);
 	int nrCellsX = cylinder[0] / dx;
+	int nrCellsY = cylinder[1] / dx;
 	int ballCenterX = cylinder[2] / dx;
 	int ballCenterY = cylinder[3] / dx;
 	int ballDiameter = cylinder[4] / dx;
 
 	#ifdef DEBUG
 		cerr<<"ballDiameter:"<<ballDiameter<<" x:"<<ballCenterX<<" y:"<<ballCenterY<<"\n";
-		cerr<<"domain:"<<nrCellsX<<"X"<<given[2]<<"\n";
+		cerr<<"domain:"<<nrCellsX<<"X"<<nrCellsY<<"\n";
 	#endif
 
-	vi result({dt, dx, acc, (double)nrCellsX, given[2], (double)ballCenterX, (double)ballCenterY, (double)ballDiameter, w });
+	vi result({dt, dx, acc, (double)nrCellsX, (double)nrCellsY, (double)ballCenterX, (double)ballCenterY, (double)ballDiameter, w });
 	return result;
 }
 
@@ -117,7 +118,8 @@ class LatticeB{
 						showTest("it2a",0,0,5);
 				#endif
 				collideStep();
-				//cerr<<"iteration "<<i<<"\n";
+				if(i%100==0)
+				  cerr<<"iteration "<<i<<"\n";
 				//return;
 			}
 		}
@@ -133,7 +135,7 @@ class LatticeB{
 			//int nr = 0;
 
 			forr(i,1,nrCellsY-1){
-				forr(j,30,38){
+				forr(j,1,nrCellsX -1){
 					// if ball continue
 					double q = 0.;
 					u = mp(0.,0.);
@@ -147,6 +149,7 @@ class LatticeB{
 						u.x += domain[i][j][k]*neighbours[k].x;//??				
 						u.y += domain[i][j][k]*neighbours[k].y;
 					}
+
 					u.x /= q;
 					//cerrr<<i<<" "<<j<<" ";
 					if(ballCells.count(mp(i,j))==0)
@@ -366,8 +369,10 @@ class LatticeB{
 					}
 					if(u.x < 0 ){
 						cerr<<i<<" "<<j<<" - reverse velosity\n";
-						//forn(k,9) cerr<<"b:"<<domainHelper[i][j][k]<<" a:"<<domain[i][j][k]<<" f:"<<feq[k]<<"\n";
 						//exit(0);
+						getResult();
+						forn(k,9) cerr<<"b:"<<domainHelper[i][j][k]<<" a:"<<domain[i][j][k]<<" f:"<<feq[k]<<"\n";
+						exit(0);
 					}
 					#endif
 				}

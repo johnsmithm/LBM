@@ -37,7 +37,8 @@ int main(int argc, char *argv[]){
 		nr = 5./param[0];
 	}
 	LatticeB simulator(param);
-	nr = 10;
+	//nr = 500;
+	cerr<<"nr:"<<nr<<"\n";
 	simulator.run(nr);
 	simulator.getResult();
 }

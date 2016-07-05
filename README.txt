@@ -4,9 +4,9 @@ How to use:
 make clean - in order to deleted the previous build
 make - to build the code
 run the code:
-./mdsim [parameter file] [data file]
+./lbm [scenario<nr>]
 
-the vtk files are written in the directory
-
+the result.out file are written
+use  plot 'result.out' matrix with image to display the image
 
 
