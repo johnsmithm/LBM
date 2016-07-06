@@ -102,22 +102,27 @@ class LatticeB{
 			
 			initiate();
 			//return;
-			forn(i,nr){
+			forn(i,2000){
 				periodicBoundaryHandler();
-				
+				//return;
 				noSlipBoundaryHandler();//
 				//return;
-				#ifdef DEBUG
+				/*#ifdef DEBUG
 					if(i==1)//debug
 						showTest("it2",0,0,5);
-				#endif
+				#endif*/
 				streamStep();//
-			//	return;
-				#ifdef DEBUG
+				//return;
+				/*#ifdef DEBUG
 					if(i==1)//debuf
 						showTest("it2a",0,0,5);
-				#endif
+					if(i==0)//debuf
+						showTest("it20",0,0,5);
+				#endif*/
+				//acc = 0;
 				collideStep();
+				/*if(i==0)//debuf
+						showTest("it201",0,0,5);*/
 				if(i%100==0)
 				  cerr<<"iteration "<<i<<"\n";
 				//return;
@@ -140,14 +145,14 @@ class LatticeB{
 					double q = 0.;
 					u = mp(0.,0.);
 					forn(k,9)
-						q+=domain[i][j][k];
+						q+=domain[k+i*line+9*j];
 					//assert(q>0.5 && q<1.5);
 					//cerr<<"q="<<q<<"\n";
 					forn(k,9){
 
 						//cerr<<k<<" "<<domain[i][j][k]<<" n1:"<<neighbours[k].x<<" "<<neighbours[k].y<<"\n";
-						u.x += domain[i][j][k]*neighbours[k].x;//??				
-						u.y += domain[i][j][k]*neighbours[k].y;
+						u.x += domain[k+i*line+9*j]*neighbours[k].x;//??				
+						u.y += domain[k+i*line+9*j]*neighbours[k].y;
 					}
 
 					u.x /= q;
@@ -205,13 +210,13 @@ class LatticeB{
 		void showTest(string name, int bY, int bX, int eX){
 			ofstream out(name);
 			out << setprecision(6) << fixed;
-			forr(i,5,10)
+			forr(i,0,10)
 			{
 				forn(k,9){
 					out<<k<<"| ";
 
-					forr(j,25,35){
-						out<<domain[i][j][k];
+					forr(j,0,10){
+						out<<domain[k+(i*line)+(9*j)];
 						if(ballCells.count(mp(i,j))!=0)out<<"* ";
 						else out<<"  ";
 					}
@@ -226,9 +231,9 @@ class LatticeB{
 			{
 				forn(k,9){
 					out<<k<<"| ";
-					forr(j,bX,eX)out<<domain[i][j][k]<<" ";
+					forr(j,bX,eX)out<<domain[k+i*line+9*j]<<" ";
 					out<<"---";
-					forr(j,nrCellsX-5,nrCellsX-1)out<<domain[i][j][k]<<" ";
+					forr(j,nrCellsX-5,nrCellsX-1)out<<domain[k+i*line+9*j]<<" ";
 					out<<"|"<<k<<"\n";
 				}
 				out<<"\n";
@@ -237,9 +242,12 @@ class LatticeB{
 
 	private:
 		void initiate(){
-			domain.assign(nrCellsY+1, vector<vector<double> >(nrCellsX+1, vector<double>(9,0.)));
-			domainHelper.assign(nrCellsY+1, vector<vector<double> >(nrCellsX+1, vector<double>(9,0.)));
-			
+			//domain.assign(nrCellsY+1, vector<vector<double> >(nrCellsX+1, vector<double>(9,0.)));
+			//domainHelper.assign(nrCellsY+1, vector<vector<double> >(nrCellsX+1, vector<double>(9,0.)));
+			domain       = new double[(nrCellsY+1)*(nrCellsX+1)*9];
+			domainHelper = new double[(1+nrCellsY)*(nrCellsX+1)*9];
+			ballCellsB   = new bool[(1+nrCellsY)*(nrCellsX+1)];
+			line = (nrCellsX+1)*9;
 
 			size_t raza = (ballDiameter / 2) ;
 			forr(i,ballCenterY-raza, ballCenterY+raza)
@@ -249,13 +257,14 @@ class LatticeB{
 						size_t ds = (i-ballCenterY)*(i-ballCenterY) + (j-ballCenterX)*(j-ballCenterX);
 						if(raza*raza >= ds){
 							ballCells.insert(mp(i,j));
+							ballCellsB[j + i*nrCellsX] = true;
 						}
 					}
 
 			forr(i,1,nrCellsY-1){
 				forr(j,1,nrCellsX-1){
 					for(int k=0;k<9;++k)						 
-						domain[i][j][k] = w[k];
+						domain[k + i*line + j*9] = w[k];
 					// 0 1 2
 					// 7 8 3
 					// 6 5 4
@@ -270,28 +279,39 @@ class LatticeB{
 			}
 		}
 		void periodicBoundaryHandler(){
+			int iline, nrCellsX19 = (nrCellsX-1)*9,nrCellsX9=nrCellsX*9;
 			forr(i,1,nrCellsY-1)
 				forn(j,9){
-					domain[i][0][j] = domain[i][nrCellsX-1][j];
-					domain[i][nrCellsX][j] = domain[i][1][j];
+					//domain[i][0][j] = domain[i][nrCellsX-1][j];
+					//domain[i][nrCellsX][j] = domain[i][1][j];
+					iline = i*line;
+					domain[j + (iline)] = domain[j + (iline) + (nrCellsX19)];
+					domain[j + (iline) + (nrCellsX9)] = domain[j + 9 + (iline)];
 				}
 		}
 		void noSlipBoundaryHandler(){
+			int i9, nrCellsYline = nrCellsY*line;
 			forr(i,1,nrCellsX-1)
 				forn(j,3){
 
-					domain[0][i+neighbours[j].x][2-j] = domain[1][i][6-j];//first
+					//domain[0][i+neighbours[j].x][2-j] = domain[1][i][6-j];//first
 
-					domain[nrCellsY][i+neighbours[j].x][4+j] = domain[nrCellsY - 1][i][j];//last
+					//domain[nrCellsY][i+neighbours[j].x][4+j] = domain[nrCellsY - 1][i][j];//last
+					i9 = i*9;
+					domain[(2 - j) + (i9+neighbours[j].x*9)] = domain[(6 - j) + line + (i9)];
+
+					domain[j + 4 + (nrCellsYline) + (i9+neighbours[j].x*9)] = domain[j + (nrCellsYline-line) + (i9)];
 				}
-
+//return;
 			//ballCells
 			for(auto p : ballCells){// px - Y, py - X
 				forn(k,9)
 					if(ballCells.count(mp(p.x+neighbours[k].y,p.y+neighbours[k].x))==0){
 						//cerr<<"cell;"<<p.x<<" "<<p.y<<" ballN:"<<(p.x+neighbours[k].y)<<" "<<p.y+neighbours[k].x<<"\n";
 						//size_t id = (k%2==1?(k+4)%8:(k+4)%8);
-						domain[p.x][p.y][k] = domain[p.x + neighbours[k].y][p.y+neighbours[k].x][(k+4)%8];						
+						//domain[p.x][p.y][k] = domain[p.x + neighbours[k].y][p.y+neighbours[k].x][(k+4)%8];	
+
+						domain[k + (p.x*line) + (p.y*9)] = domain[((k+4)%8) + ((p.x + neighbours[k].y)*line)+ ((p.y+neighbours[k].x)*9)];					
 					}
 			}
 
@@ -301,88 +321,100 @@ class LatticeB{
 			forr(i,1,nrCellsY-1)
 				forr(j,1,nrCellsX-1){
 					// if ball continue;
-					if(ballCells.count(mp(i,j))!=0)continue;
+					if(ballCellsB[(i*nrCellsX)+(j)])continue;
+					//cerr<<i<<" "<<j<<"\n";
 					forn(q,9){
 						//if(i == 1 && j == 1)cerr<<domainHelper[i][j][q]<<" - ";
-						domainHelper[i][j][q] = domain[i-neighbours[q].y][j-neighbours[q].x][q];	
+						/*if(0 && i==41 && j==151){cerr<<line<<" "<<(q+(line*(i-neighbours[q].y))+(9*(j-neighbours[q].x)));
+							cerr<<" "<<(q+(i*line)+(9*j))<<" "<<((nrCellsY+1)*(nrCellsX+1)*9)<<"\n";
+						}*/
+						domainHelper[q+(i*line)+(9*j)] = domain[q+(line*(i-neighbours[q].y))+(9*(j-neighbours[q].x))];	
 						//if(i == 1 && j == 1)cerr<<domainHelper[i][j][q]<<"a\n";
 					}
-
+				//	cerr<<i<<" "<<j<<"\n";
 				}
 
 			//copy values
-			forr(i,1,nrCellsY-1)
+			/*forr(i,1,nrCellsY-1)
 				forr(j,1,nrCellsX-1){
 					// if ball continue;
 					forn(q,9)
 						domain[i][j][q] = domainHelper[i][j][q];
-				}
+				}*/
 			//cerr<<"test:"<<domain[10][10][5]<<"\n";
 		}
 		void collideStep(){//{{-1,1},{0,1},{1,1},{1,0},{1,-1},{0,-1},{-1,-1},{-1,0},{0,0}}
-			double q;
+			double q,feq1;
 			pair<double , double> u = mp(0.,0.);
+			int nn ;
 
 			forr(i,1,nrCellsY-1)
 				forr(j,1,nrCellsX-1){
 					// if ball continue
-					if(ballCells.count(mp(i,j))!=0)continue;
+					if(ballCellsB[i*nrCellsX+j])continue;
 					q = 0.;
 					u = mp(0.,0.);
-					forn(k,9)
-						q+=domain[i][j][k];
+				    nn = (i*line)+(j*9);
+					//forn(k,9)
+					//	q+=domain[i][j][k];
 					forn(k,9){//correct
-						u.x += domain[i][j][k]*neighbours[k].x;						
-						u.y += domain[i][j][k]*neighbours[k].y;
-						feq[k] = 0.;
+						feq1 = domainHelper[k+nn];
+						q   += feq1;
+						u.x += feq1*neighbours[k].x;						
+						u.y += feq1*neighbours[k].y;
+						//feq[k] = 0.;
 					}
 					u.x /= q;
 					u.y /= q;
 					forn(k,9){
 						double pr = neighbours[k].x*u.x+neighbours[k].y*u.y;
 						double u2 = u.x*u.x+u.y*u.y;
-						feq[k] = w[k]*q*(1.+ 3.*pr + ((9.*pr*pr)/2.)- (3.*u2)/2.);
-						
+						feq1 = w[k]*q*(1.+ 3.*pr + (4.5*pr*pr)- (1.5*u2));
+						pr = domainHelper[k+nn];
 						//if((i == 1||i==(size_t)nrCellsY) && j == 1)cerr<<i<<" "<<feq[k]<<"f - d:";
-						domain[i][j][k] = domain[i][j][k] - W*(domain[i][j][k]-feq[k])+3.*w[k]*q*(neighbours[k].x!=0?acc*neighbours[k].x+acc*0:0);//(neighbours[k].y*0+neighbours[k].x*acc);//??
+						domain[k+nn] = pr - W*(pr - feq1)+ 3.*w[k]*q*acc*neighbours[k].x;
 						//if((i == 1||i==(size_t)nrCellsY) && j == 1)cerr<<i<<" "<<domain[i][j][k]<<"\n";
 					}
 
 					//test
-					#ifdef DEBUG
+					/*#ifdef DEBUG
 						q = 0.;
 						//u = mp(0.,0.);
 
 						forn(k,9)
-							q+=domain[i][j][k];
+							q+=domain[k+(i*line)+(9*j)];
 
-						if(q>1.5 || q<0.3){cerr<<q<<" error\n"; 
-						cerr<<"v:"<<u.x<<" "<<u.y<<"\n";
-						  forn(k,9) cerr<<domain[i][j][k]<<" f:"<<feq[k]<<"\n";
-						return;}
+						if(q>1.5 || q<0.3){
+						cerr<<i<<"x"<<j<<"\n";
+						cerr<<q<<" error\n"; 
+						cerr<<"ve:"<<u.x<<" "<<u.y<<"\n";
+						  forn(k,9) cerr<<"b:"<<domainHelper[k+(i*line)+(9*j)]<<" a:"<<domain[k+(i*line)+(9*j)]<<"\n";
+						return;
+					    }
 
 						u = mp(0.,0.);
 					forn(k,9){//correct
-						u.x += domain[i][j][k]*neighbours[k].x;						
-						u.y += domain[i][j][k]*neighbours[k].y;
+						u.x += domain[k+(i*line)+(9*j)]*neighbours[k].x;						
+						u.y += domain[k+(i*line)+(9*j)]*neighbours[k].y;
 						feq[k] = 0.;
 					}
 					if(u.x < 0 ){
 						cerr<<i<<" "<<j<<" - reverse velosity\n";
 						//exit(0);
 						getResult();
-						forn(k,9) cerr<<"b:"<<domainHelper[i][j][k]<<" a:"<<domain[i][j][k]<<" f:"<<feq[k]<<"\n";
+						forn(k,9) cerr<<"b:"<<domainHelper[k+(i*line)+(9*j)]<<" a:"<<domain[k+(i*line)+(9*j)]<<"\n";
 						exit(0);
 					}
-					#endif
+					#endif*/
 				}
 		}
 
-		int nrCellsY, nrCellsX, ballCenterX, ballCenterY, ballDiameter;
+		int nrCellsY, nrCellsX, ballCenterX, ballCenterY, ballDiameter, line;
 		double dx, dt, acc , W;
 		vector<pair<int,int> > neighbours;
 		vi w;
 		vi feq;
-		ma domain, domainHelper;
+		double * domain, * domainHelper;
+		bool * ballCellsB;
 		set<pair<int,int> > ballCells;
 };
