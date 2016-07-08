@@ -33,22 +33,22 @@ int main(int argc, char *argv[]){
 	assert(argc>0);
 	string par = argv[1];
 
-	run_test();
-	return 0;
+	//run_test();
+	//return 0;
 
 	vi param;
 	// sizeXCylinder, sizeCylinderY, ballCenterX, ballCenterY, ballDiameter
 	vi cylinder({0.06,0.02,0.02,0.008,0.005});
 	int nr=0;
 	if(par == "scenario1"){
+		                      // viscos, acc, diameter
 		param = getParameters({0.000001,0.01,30},cylinder);
 		nr = 3./param[0];
 	}else{
-		param = getParameters({0.000001,0.0016,60},cylinder);
+		param = getParameters({0.000001,0.016,60},cylinder);
 		nr = 5./param[0];
 	}
 	LatticeB simulator(param);
-	//nr = 500;
 	cerr<<"nr:"<<nr<<"\n";
 	simulator.run(nr);
 	simulator.getResult();
