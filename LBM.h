@@ -39,11 +39,11 @@ vi getParameters(vi given, vi cylinder){
 	vis = given[0] * (dt/(dx*dx));
 	w = 1./(3.*vis+0.5);
 	//cerr<<"w0:"<<w<<" vis0:"<<vis<<"\n";
-	while(w>=1.8){
+	while(w>=1.9800){
 		dt *= 10.;		
 		vis = given[0] * (dt/(dx*dx));
 		w = 1./(3.*vis+0.5);
-		//<<"w<"<<w<<"\n";
+		cerr<<"w<"<<w<<"\n";
 	}
 
 	#ifdef DEBUG
@@ -90,7 +90,7 @@ class LatticeB{
 			 W = param[8];	                	// lt 0    ct1  rt2   3rc   4rb     5cb    6lb    7 lc    cc
 			 cerr<<"W:"<<W<<"\n";
 			 neighbours = vector<pair<int,int> >({{-1,1},{0,1},{1,1},{1,0},{1,-1},{0,-1},{-1,-1},{-1,0},{0,0}});// x,y
-			 w = vector<double>({1./36.,1./9, 1./36.,1./9, 1./36.,1./9, 1./36.,1./9, 4./9.});
+			 w = vector<double>({1./36.,1./9., 1./36.,1./9., 1./36.,1./9., 1./36.,1./9., 4./9.});
 			 feq = vector<double>(9,0.);
 			
 		}
@@ -102,7 +102,7 @@ class LatticeB{
 			
 			initiate();
 			//return;
-			forn(i,2000){
+			forn(i,nr){
 				periodicBoundaryHandler();
 				//return;
 				noSlipBoundaryHandler();//
@@ -127,6 +127,40 @@ class LatticeB{
 				  cerr<<"iteration "<<i<<"\n";
 				//return;
 			}
+		}
+
+		void testCollindeStep(){
+			initiate();
+			periodicBoundaryHandler();
+				
+			noSlipBoundaryHandler();
+				
+			streamStep();
+			acc = 0.;
+			showTest("it20",0,0,5);
+			collideStep();
+			showTest("it2a",0,0,5);
+			W = 1.;
+			collideStep();
+			showTest("it2",0,0,5);
+			cerr<<"it20,it2a and it2\n";
+		}
+
+		void testStreamStep(){
+			initiate();
+			periodicBoundaryHandler();
+				
+			noSlipBoundaryHandler();//
+				
+			streamStep();
+			forr(i,1,nrCellsY-1)
+				forr(j,1,nrCellsX-1)
+					forn(q,9)
+						if(domain[q+(line*i)+(j*9)] != domain[q+(line*i)+(j*9)]){
+							cerr<<"error Step Stream:"<<i<<"X"<<j<<"\n";
+							return;
+						}
+			cerr<<"ok Stream step\n";
 		}
 
 		/**
@@ -313,7 +347,7 @@ class LatticeB{
 
 						domain[k + (p.x*line) + (p.y*9)] = domain[((k+4)%8) + ((p.x + neighbours[k].y)*line)+ ((p.y+neighbours[k].x)*9)];					
 					}
-			}
+			}//todo: go just through boundary
 
 		}
 		void streamStep(){
@@ -345,10 +379,10 @@ class LatticeB{
 		}
 		void collideStep(){//{{-1,1},{0,1},{1,1},{1,0},{1,-1},{0,-1},{-1,-1},{-1,0},{0,0}}
 			double q,feq1;
-			pair<double , double> u = mp(0.,0.);
+			pair<double , double> u = mp(0.,0.);// change to doubles
 			int nn ;
 
-			forr(i,1,nrCellsY-1)
+			forr(i,1,nrCellsY-1)//change to normal for
 				forr(j,1,nrCellsX-1){
 					// if ball continue
 					if(ballCellsB[i*nrCellsX+j])continue;
@@ -411,7 +445,7 @@ class LatticeB{
 
 		int nrCellsY, nrCellsX, ballCenterX, ballCenterY, ballDiameter, line;
 		double dx, dt, acc , W;
-		vector<pair<int,int> > neighbours;
+		vector<pair<int,int> > neighbours;// change to array
 		vi w;
 		vi feq;
 		double * domain, * domainHelper;
