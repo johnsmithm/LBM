@@ -121,12 +121,14 @@ class LatticeB{
 						domain[j + 4 + (nrCellsYline) + (i9+neighbours[j*2]*9)] = domain[j + (nrCellsYline-line) + (i9)];
 					}
 
-				for(auto p : ballCells){// px - Y, py - X
+				/*for(auto p : ballCells){// px - Y, py - X
 					forn(k,9)
 						if(ballCells.count(mp(p.x+neighbours[1+2*k],p.y+neighbours[2*k]))==0){
 							domain[k + (p.x*line) + (p.y*9)] = domain[((k+4)%8) + ((p.x + neighbours[1+2*k])*line)+ ((p.y+neighbours[2*k])*9)];					
 						}
-				}
+				}*/
+				for(int i=0;i<nk;i+=2)
+					domain[rel[i]] = domain[rell[i+1]];
 
 			    //{{-1,1},{0,1},{1,1},{1,0},{1,-1},{0,-1},{-1,-1},{-1,0},{0,0}}
 				double q,feq1,uy,ux;
@@ -154,7 +156,7 @@ class LatticeB{
 							feq1 = w[k]*q*(1.+ 3.*pr + (4.5*pr*pr)- (1.5*u2));
 							double pr1 = domainHelper[k+nn];
 							domain[k+nn] = pr1*(1.-W) + W*feq1+ 3.*w[k]*q*acc*neighbours[k*2];
-						}					
+						}				
 					}
 
 				if(i1%500==0)
@@ -221,7 +223,7 @@ class LatticeB{
 				cerrr<<"\n";
 			}
 
-			img.save((ballCenterY==48?"scenario1.png":"scenario2.png"));
+			img.save((ballCenterY==48?"scenario12.png":"scenario22.png"));
 			cerrr.close();					
 		}	
 
@@ -253,11 +255,21 @@ class LatticeB{
 						// 6 5 4
 				}
 			}
+
+			for(auto p : ballCells){// px - Y, py - X
+					forn(k,9)
+						if(ballCells.count(mp(p.x+neighbours[1+2*k],p.y+neighbours[2*k]))==0){
+							//domain[k + (p.x*line) + (p.y*9)] = domain[((k+4)%8) + ((p.x + neighbours[1+2*k])*line)+ ((p.y+neighbours[2*k])*9)];					
+							rel[nk] = k + (p.x*line) + (p.y*9);
+							rell[nk+1] = ((k+4)%8) + ((p.x + neighbours[1+2*k])*line)+ ((p.y+neighbours[2*k])*9);
+							nk += 2;
+						}
+				}
 		}
 		
 
-		int nrCellsY, nrCellsX, ballCenterX, ballCenterY, ballDiameter, line;
-		double dx, dt, acc , W;
+		int nrCellsY, nrCellsX, ballCenterX, ballCenterY, ballDiameter, line, nk=0;
+		double dx, dt, acc , W; int rel[5000], rell[5000];
 		int neighbours[18] =  {-1,1,0,1,1,1,1,0,1,-1,0,-1,-1,-1,-1,0,0,0};
 
 		double  w[9] = {1./36.,1./9., 1./36.,1./9., 1./36.,1./9., 1./36.,1./9., 4./9.};
