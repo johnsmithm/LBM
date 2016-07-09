@@ -99,12 +99,22 @@ class LatticeB{
 		* run the simulation 'nr' time
 		*/
 		void run(int nr1){
-			
+
+			//siwir::Timer timer;
+
 			initiate();
-			//nr1 = 1000;
+
+			//double time1 = timer.elapsed(),total1=0,total2=0;
+			//cerr<<"time initiate:"<<time1<<'\n';
+
+			//nr1 = 5000;
+			double q,feq1,uy,ux,pr,u2,pr1;
+			int nn ;
+			int iline, nrCellsX19 = (nrCellsX-1)*9,nrCellsX9=nrCellsX*9;
+			int i9, nrCellsYline = nrCellsY*line;
 			for(int i1=0;i1<nr1;++i1){
+				//timer.reset();
 				// periodic boundary handler
-				int iline, nrCellsX19 = (nrCellsX-1)*9,nrCellsX9=nrCellsX*9;
 				for(int i=1;i<nrCellsY;++i)
 					for(int j=0;j<9;++j){
 						iline = i*line;
@@ -113,24 +123,45 @@ class LatticeB{
 					}
 		
 				// no slip boundary handler 
-				int i9, nrCellsYline = nrCellsY*line;
-				for(int i=1;i<nrCellsX;++i)
-					for(int j=0;j<3;++j){
+				for(int i=1;i<nrCellsX;++i){
+					//for(int j=0;j<3;++j){
 						i9 = i*9;
-						domain[(2 - j) + (i9+neighbours[j*2]*9)] = domain[(6 - j) + line + (i9)];
-						domain[j + 4 + (nrCellsYline) + (i9+neighbours[j*2]*9)] = domain[j + (nrCellsYline-line) + (i9)];
+						domain[6 + (i9+neighbours[14]*9)] = domain[7 + line + (i9)];//first
+						domain[1 + (i9+neighbours[4]*9)] =  domain[2 + line + (i9)];
+						domain[5 + (i9+neighbours[16]*9)] = domain[8 + line + (i9)];
+
+						domain[7 + (nrCellsYline) + (i9+neighbours[12]*9)] = 
+						domain[6 + (nrCellsYline-line) + (i9)];
+						domain[2 + (nrCellsYline) + (i9+neighbours[2]*9)] = 
+						domain[1 + (nrCellsYline-line) + (i9)];
+						domain[8 + (nrCellsYline) + (i9+neighbours[10]*9)] = 
+						domain[5 + (nrCellsYline-line) + (i9)];
 					}
 
 				for(auto p : ballCells){// px - Y, py - X
-					forn(k,9)
+					for(int k=0;k<9;++k)
 						if(ballCells.count(mp(p.x+neighbours[1+2*k],p.y+neighbours[2*k]))==0){
-							domain[k + (p.x*line) + (p.y*9)] = domain[((k+4)%8) + ((p.x + neighbours[1+2*k])*line)+ ((p.y+neighbours[2*k])*9)];					
+							domain[k + (p.x*line) + (p.y*9)] = domain[nei[k] + ((p.x + neighbours[1+2*k])*line)+ ((p.y+neighbours[2*k])*9)];					
 						}
 				}
+				/*size_t raza = (ballDiameter / 2) ;
+				for(size_t i=ballCenterY-raza; i<= ballCenterY+raza;++i)
+					for(size_t j=ballCenterX - raza;j<= ballCenterX + raza;++j)
+						{
+							if(ballCellsB[i*nrCellsX+j]){
+								for(int k= 0;k<9;++k)
+									if(ballCells.count(mp(i+neighbours[1+2*k],j+neighbours[2*k]))==0){
+										domain[k + (i*line) + (j*9)] = 
+										domain[nei[k] + ((i + neighbours[1+2*k])*line)+ ((j+neighbours[2*k])*9)];					
+									}
+							}
+						}*/
 
 			    //{{-1,1},{0,1},{1,1},{1,0},{1,-1},{0,-1},{-1,-1},{-1,0},{0,0}}
-				double q,feq1,uy,ux;
-				int nn ;
+				
+				//double time2 = timer.elapsed();
+				//cerr<<"time boundary:"<<(time2)<<'\n';
+				//total1 += time2;
 
 				for(int i=1;i<nrCellsY;++i)
 					for(int j=1;j<nrCellsX;++j){
@@ -147,19 +178,26 @@ class LatticeB{
 						}
 						ux /= q;
 						uy /= q;
+						if(q>1.5 || q<0.5)cerr<<"incorect density"<<q<<"\n";
 						// collide step
 						for(int k=0;k<9;++k){
-							double pr = neighbours[k*2]*ux+neighbours[1+k*2]*uy;
-							double u2 = ux*ux+uy*uy;
+							pr = neighbours[k*2]*ux+neighbours[1+k*2]*uy;
+						    u2 = ux*ux+uy*uy;
 							feq1 = w[k]*q*(1.+ 3.*pr + (4.5*pr*pr)- (1.5*u2));
-							double pr1 = domainHelper[k+nn];
+							pr1 = domainHelper[k+nn];
 							domain[k+nn] = pr1*(1.-W) + W*feq1+ 3.*w[k]*q*acc*neighbours[k*2];
 						}					
 					}
 
+					//double time3 = timer.elapsed();
+					//cerr<<"time stream+colide:"<<(time3-time2)<<'\n';
+					//total2 += (time3-time2);
+
 				if(i1%500==0)
 				  cerr<<"iteration "<<i1<<"\n";
 			}
+
+			//cerr<<"b:"<<total1<<" sc:"<<total2<<"\n";
 		}
 
 		/**
@@ -221,7 +259,7 @@ class LatticeB{
 				cerrr<<"\n";
 			}
 
-			img.save((ballCenterY==48?"scenario1.png":"scenario2.png"));
+			img.save((ballCenterY==48?"scenario11.png":"scenario21.png"));
 			cerrr.close();					
 		}	
 
@@ -258,9 +296,11 @@ class LatticeB{
 
 		int nrCellsY, nrCellsX, ballCenterX, ballCenterY, ballDiameter, line;
 		double dx, dt, acc , W;
-		int neighbours[18] =  {-1,1,0,1,1,1,1,0,1,-1,0,-1,-1,-1,-1,0,0,0};
-
-		double  w[9] = {1./36.,1./9., 1./36.,1./9., 1./36.,1./9., 1./36.,1./9., 4./9.};
+		int neighbours[18] = {0 ,0,0 ,1, 0,-1, -1,0,  1, 0,-1,1, 1,1, -1,-1,  1,-1  };
+		//  {-1,1,0,1,1,1,1,0,1,-1,0,-1,-1,-1,-1,0,0,0};
+		int nei[9] = {0,2,1,4,3,8,7,6,5};
+		double  w[9] = {4./9. , 1./9. , 1./9., 1./9., 1./9. , 1./36. , 1./36. , 1./36., 1./36.};
+		// {1./36.,1./9., 1./36.,1./9., 1./36.,1./9., 1./36.,1./9., 4./9.};
 		
 		double * domain, * domainHelper;
 		bool * ballCellsB;

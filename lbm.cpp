@@ -5,9 +5,9 @@
 #include <string>
 
 
-
-#include "LBM.h"
 #include "Timer.h"
+#include "LBM.h"
+
 
 
 using namespace std;
@@ -50,6 +50,9 @@ int main(int argc, char *argv[]){
 	}
 	LatticeB simulator(param);
 	cerr<<"nr:"<<nr<<"\n";
+	siwir::Timer timer;
 	simulator.run(nr);
+	double time = timer.elapsed();
+	cout<<"time total:"<<time<<'\n';
 	simulator.getResult();
 }
