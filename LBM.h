@@ -117,20 +117,14 @@ class LatticeB{
 				for(int i=1;i<nrCellsX;++i)
 					for(int j=0;j<3;++j){
 						i9 = i*9;
-						domain[(2 - j) + (i9+neighbours[j*2]*9)] = domain[(6 - j) + line + (i9)];
-						domain[j + 4 + (nrCellsYline) + (i9+neighbours[j*2]*9)] = domain[j + (nrCellsYline-line) + (i9)];
+						domain[(2 - j) + (i9+neighbours[j]*9)] = domain[(6 - j) + line + (i9)];
+						domain[j + 4 + (nrCellsYline) + (i9+neighbours[j]*9)] = domain[j + (nrCellsYline-line) + (i9)];
 					}
 
-				/*for(auto p : ballCells){// px - Y, py - X
-					forn(k,9)
-						if(ballCells.count(mp(p.x+neighbours[1+2*k],p.y+neighbours[2*k]))==0){
-							domain[k + (p.x*line) + (p.y*9)] = domain[((k+4)%8) + ((p.x + neighbours[1+2*k])*line)+ ((p.y+neighbours[2*k])*9)];					
-						}
-				}*/
 				for(int i=0;i<nk;i+=2)
 					domain[rel[i]] = domain[rell[i+1]];
 
-			    //{{-1,1},{0,1},{1,1},{1,0},{1,-1},{0,-1},{-1,-1},{-1,0},{0,0}}
+			   
 				double q,feq1,uy,ux;
 				int nn ;
 
@@ -141,21 +135,21 @@ class LatticeB{
 					    nn = (i*line)+(j*9);
 						for(int k=0;k<9;++k){
 							// stream step
-							feq1 = domain[k+(line*(i-neighbours[k*2+1]))+(9*(j-neighbours[k*2]))];
+							feq1 = domain[k+(line*(i-neighbours[k+9]))+(9*(j-neighbours[k]))];
 							domainHelper[k+nn] = feq1;
 							q   += feq1;
-							ux += feq1*neighbours[k*2];						
-							uy += feq1*neighbours[1+k*2];
+							ux += feq1*neighbours[k];						
+							uy += feq1*neighbours[9+k];
 						}
 						ux /= q;
 						uy /= q;
 						// collide step
 						for(int k=0;k<9;++k){
-							double pr = neighbours[k*2]*ux+neighbours[1+k*2]*uy;
+							double pr = neighbours[k]*ux+neighbours[9+k]*uy;
 							double u2 = ux*ux+uy*uy;
 							feq1 = w[k]*q*(1.+ 3.*pr + (4.5*pr*pr)- (1.5*u2));
 							double pr1 = domainHelper[k+nn];
-							domain[k+nn] = pr1*(1.-W) + W*feq1+ 3.*w[k]*q*acc*neighbours[k*2];
+							domain[k+nn] = pr1*(1.-W) + W*feq1+ 3.*w[k]*q*acc*neighbours[k];
 						}				
 					}
 
@@ -180,8 +174,8 @@ class LatticeB{
 					forn(k,9)
 						q+=domain[k+i*line+9*j];
 					forn(k,9){
-						u.x += domain[k+i*line+9*j]*neighbours[2*k];//??				
-						u.y += domain[k+i*line+9*j]*neighbours[1+2*k];
+						u.x += domain[k+i*line+9*j]*neighbours[k];//??				
+						u.y += domain[k+i*line+9*j]*neighbours[9+k];
 					}
 					u.x /= q;
 					if(ballCells.count(mp(i,j))==0){
@@ -206,8 +200,8 @@ class LatticeB{
 					forn(k,9)
 						q+=domain[k+i*line+9*j];
 					forn(k,9){
-						u.x += domain[k+i*line+9*j]*neighbours[2*k];//??				
-						u.y += domain[k+i*line+9*j]*neighbours[1+2*k];
+						u.x += domain[k+i*line+9*j]*neighbours[k];//??				
+						u.y += domain[k+i*line+9*j]*neighbours[9+k];
 					}
 					u.x /= q;
 					int val = 0;
@@ -223,7 +217,7 @@ class LatticeB{
 				cerrr<<"\n";
 			}
 
-			img.save((ballCenterY==48?"scenario12.png":"scenario22.png"));
+			img.save((ballCenterY==48?"scenario1.png":"scenario2.png"));
 			cerrr.close();					
 		}	
 
@@ -258,10 +252,9 @@ class LatticeB{
 
 			for(auto p : ballCells){// px - Y, py - X
 					forn(k,9)
-						if(ballCells.count(mp(p.x+neighbours[1+2*k],p.y+neighbours[2*k]))==0){
-							//domain[k + (p.x*line) + (p.y*9)] = domain[((k+4)%8) + ((p.x + neighbours[1+2*k])*line)+ ((p.y+neighbours[2*k])*9)];					
+						if(ballCells.count(mp(p.x+neighbours[9+k],p.y+neighbours[k]))==0){
 							rel[nk] = k + (p.x*line) + (p.y*9);
-							rell[nk+1] = ((k+4)%8) + ((p.x + neighbours[1+2*k])*line)+ ((p.y+neighbours[2*k])*9);
+							rell[nk+1] = ((k+4)%8) + ((p.x + neighbours[9+k])*line)+ ((p.y+neighbours[k])*9);
 							nk += 2;
 						}
 				}
@@ -270,7 +263,7 @@ class LatticeB{
 
 		int nrCellsY, nrCellsX, ballCenterX, ballCenterY, ballDiameter, line, nk=0;
 		double dx, dt, acc , W; int rel[5000], rell[5000];
-		int neighbours[18] =  {-1,1,0,1,1,1,1,0,1,-1,0,-1,-1,-1,-1,0,0,0};
+		int neighbours[18] =  {-1,0,1,1,1,0,-1,-1,0,  1,1,1,0,-1,-1,-1,0,0};
 
 		double  w[9] = {1./36.,1./9., 1./36.,1./9., 1./36.,1./9., 1./36.,1./9., 4./9.};
 		
