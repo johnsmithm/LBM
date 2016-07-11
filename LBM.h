@@ -98,13 +98,18 @@ class LatticeB{
 		/**
 		* run the simulation 'nr' time
 		*/
-		void run(int nr1){
-			
+		void run(int nr1){			
+				
 			initiate();
+
+			int iline, nrCellsX19 = (nrCellsX-1)*9,nrCellsX9=nrCellsX*9;
+			int i9, nrCellsYline = nrCellsY*line;
+			double q,feq1,uy,ux, pr1, eXu, u2;
+			int nn ;
+
 			//nr1 = 1000;
 			for(int i1=0;i1<nr1;++i1){
 				// periodic boundary handler
-				int iline, nrCellsX19 = (nrCellsX-1)*9,nrCellsX9=nrCellsX*9;
 				for(int i=1;i<nrCellsY;++i)
 					for(int j=0;j<9;++j){
 						iline = i*line;
@@ -113,7 +118,6 @@ class LatticeB{
 					}
 		
 				// no slip boundary handler 
-				int i9, nrCellsYline = nrCellsY*line;
 				for(int i=1;i<nrCellsX;++i)
 					for(int j=0;j<3;++j){
 						i9 = i*9;
@@ -125,8 +129,6 @@ class LatticeB{
 					domain[rel[i]] = domain[rell[i+1]];
 
 			   
-				double q,feq1,uy,ux;
-				int nn ;
 
 				for(int i=1;i<nrCellsY;++i)
 					for(int j=1;j<nrCellsX;++j){
@@ -145,10 +147,10 @@ class LatticeB{
 						uy /= q;
 						// collide step
 						for(int k=0;k<9;++k){
-							double pr = neighbours[k]*ux+neighbours[9+k]*uy;
-							double u2 = ux*ux+uy*uy;
-							feq1 = w[k]*q*(1.+ 3.*pr + (4.5*pr*pr)- (1.5*u2));
-							double pr1 = domainHelper[k+nn];
+						    eXu = neighbours[k]*ux+neighbours[9+k]*uy;
+						    u2 = ux*ux+uy*uy;
+							feq1 = w[k]*q*(1.+ 3.*eXu + (4.5*eXu*eXu)- (1.5*u2));
+						    pr1 = domainHelper[k+nn];
 							domain[k+nn] = pr1*(1.-W) + W*feq1+ 3.*w[k]*q*acc*neighbours[k];
 						}				
 					}
