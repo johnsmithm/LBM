@@ -37,16 +37,16 @@ vi getParameters(vi given, vi cylinder){
 	
 	double dt, dx, w, acc, vis;
 	dx = cylinder[4] / given[2];
-	dt = 0.000000001;
+	dt = 0.0005;
 	vis = given[0] * (dt/(dx*dx));
 	w = 1./(3.*vis+0.5);
 	//cerr<<"w0:"<<w<<" vis0:"<<vis<<"\n";
-	while(w>=1.9800){
+	/*while(w>=1.9800){
 		dt *= 10.;		
 		vis = given[0] * (dt/(dx*dx));
 		w = 1./(3.*vis+0.5);
 		//cerr<<"w<"<<w<<"\n";
-	}
+	}*/
 
 	#ifdef DEBUG
 		cerr<<"w:"<<w<<" vis:"<<vis<<"\n";
@@ -104,10 +104,10 @@ class LatticeB{
 
 			int iline, nrCellsX19 = (nrCellsX-1)*9,nrCellsX9=nrCellsX*9;
 			int i9, nrCellsYline = nrCellsY*line;
-			double q,feq1,uy,ux, pr1, eXu, u2;
+			double q,feq1,uy,ux, eXu, u2;
 			int nn ;
 
-			nr1 = 100;
+			//nr1 = 100;
 
 			int ll=0;
 			double qmax = 0., qmin = 2.;
@@ -134,20 +134,20 @@ class LatticeB{
 				for(int i=0;i<nk;i+=2)
 					domain[rel[i]] = domain[rel[i+1]];
 
-			    checkBoundary();
+				//if(i1==90)  checkBoundary();
 
 				for(int i=1;i<nrCellsY;++i)
 					for(int j=1;j<nrCellsX;++j){
 						if(ballCellsB[i*nrCellsX+j])continue;
-						q = ux = uy = 0.;
-					    nn = (i*line)+(j*9);
+						q = 0.;ux = 0.; uy = 0.;
+					        nn = (i*line)+(j*9);
 						for(int k=0;k<9;++k){
 							// stream step
 							feq1 = domain[k+(line*(i-neighbours[k+9]))+(9*(j-neighbours[k]))];
 							domainHelper[k+nn] = feq1;
 							q   += feq1;
-							ux += feq1*neighbours[k];						
-							uy += feq1*neighbours[9+k];
+							ux += (feq1*neighbours[k]);						
+							uy += (feq1*neighbours[9+k]);
 						}
 						ux /= q;
 						uy /= q;
@@ -156,16 +156,17 @@ class LatticeB{
 						qmax = max(qmax,q);
 						qmin = min(qmin,q);
 						// collide step
-						for(int k=0;k<9;++k){
-						    eXu = neighbours[k]*ux+neighbours[9+k]*uy;
-						    u2 = ux*ux+uy*uy;
-							feq1 = w[k]*q*(1.+ 3.*eXu + (4.5*eXu*eXu)- (1.5*u2));
-						    pr1 = domainHelper[k+nn];
-							domain[k+nn] = pr1*(1.-W) + W*feq1+ 3.*w[k]*q*acc*neighbours[k];
-						}				
+						for(int k=0;k<9 ;++k){
+						        eXu = (((double)neighbours[k])*ux)+(((double)neighbours[9+k])*uy);
+							u2 = (ux*ux)+(uy*uy);
+							feq1 = w[k]*q*(1.+ 3.*eXu + (4.5*eXu*eXu)- (1.5*u2));							
+							domain[k+nn] = ((domainHelper[k+nn]*(1.-W)) + (W*feq1)+ (3.*w[k]*q*acc*(neighbours[k]*1.)));
+						}
 					}
-
-				checkStreamCollide();
+					
+				//if(i1==90)
+				//  checkStreamCollide();
+				
 				++ll;
 				if(i1%500==0)
 				  cerr<<"iteration "<<i1<<"\n";
@@ -176,14 +177,34 @@ class LatticeB{
 		}
 
 		void checkBoundary(){
+		        ofstream ou("d1.out");
+			int nnt = 0;
 			size_t raza = (ballDiameter / 2) ;
 			forr(i,ballCenterY-raza-1, ballCenterY+raza){
-				//cerr<<"i:"<<i;//<<"\n";
+			  
+				ou<<"i:"<<left<<setw(10)<<i;
+				forr(j,ballCenterX - raza-1, ballCenterX + raza+1) ou<<left<<setw(12)<<j<<" ";
+				ou<<"\n";
+				
+				forn(k,9){
+				  ou<<left<<setw(12)<<k<<" ";
+				  forr(j,ballCenterX - raza-1, ballCenterX + raza+1){
+				                size_t ds = (0.5 + i-ballCenterY)*(0.5+i-ballCenterY) + ( -0.5 + j-ballCenterX)*(-0.5+j-ballCenterX);
+						if(raza*raza >= ds)ou<<"*";
+						else ou<<" ";
+				                 ou<<left<<setw(12)<<domain[(i*line) + (j*9) + k];
+				  }
+				  ou<<" "<<k<<"\n";
+				}
+				ou<<"\n";
+				
 				forr(j,ballCenterX - raza-1, ballCenterX + raza+1)
-					{   //cerr<<" j:"<<j<<" ";
+					{  //cerr<<" j:"<<j<<" ";
+						
+					  
 						assert(i>=1 && i<(size_t)nrCellsY && j >=1 && j<(size_t)nrCellsX);
 						size_t ds = (0.5 + i-ballCenterY)*(0.5+i-ballCenterY) + ( -0.5 + j-ballCenterX)*(-0.5+j-ballCenterX);
-						if(raza*raza >= ds){
+						if(raza*raza > ds){
 							
 							//ballCells.insert(mp(i,j));
 							//ballCellsB[j + i*nrCellsX] = true;
@@ -191,9 +212,12 @@ class LatticeB{
 						}else{
 							forn(k,9){
 
-								if(ballCellsB[((i+neighbours[k+9])*(nrCellsX+1))+((j+neighbours[k])*9)+k]){
-									if(domain[(i*line) + (j*9) + k]!=domainHelper[((i+neighbours[k+9])*line)+((j+neighbours[k])*9)+op[k]]){
+								if(ballCellsB[((i+neighbours[k+9])*(nrCellsX))+((j+neighbours[k]))]){
+								  //cerr<<i<<" "<<neighbours[k+9]<<" "<<nrCellsX<<" " <<((i+neighbours[k+9])*(nrCellsX))<<" "<<(j+neighbours[k])<<"\n";
+								  ++nnt;
+									if(domain[(i*line) + (j*9) + k]!=domain[((i+neighbours[k+9])*line)+((j+neighbours[k])*9)+op[k]]){
 										cerr<<"bounder error cylinder:"<< i<<" "<<j<<" "<<k<<"\n";
+										cerr<<(i+neighbours[k+9])<<" "<<(j+neighbours[k])<<" "<<op[k]<<"\n";
 										exit(0);
 									}
 								}
@@ -202,8 +226,62 @@ class LatticeB{
 					}
 					//cerr<<"\n";
 				}
+			cerr<<"nt:"<<nnt<<"\n";
 		}
-		void checkStreamCollide(){}
+		void checkStreamCollide(){
+		  ofstream ou("d22.out");
+		  int nnt = 0;
+		    size_t raza = (ballDiameter / 2) ;
+			forr(i,ballCenterY-raza-1, ballCenterY+raza){
+				ou<<"i:"<<left<<setw(10)<<i;
+				forr(j,ballCenterX - raza-1, ballCenterX + raza+1) ou<<left<<setw(24)<<j<<" ";
+				ou<<"\n";
+				
+				forn(k,9){
+				  ou<<left<<setw(12)<<k<<" ";
+				  forr(j,ballCenterX - raza-1, ballCenterX + raza+1){
+				                size_t ds = (0.5 + i-ballCenterY)*(0.5+i-ballCenterY) + ( -0.5 + j-ballCenterX)*(-0.5+j-ballCenterX);
+						if(raza*raza >= ds){ou<<"*";
+						
+				                 ou<<left<<setw(12)<<domainHelper[(i*line) + (j*9) + k]<<left<<setw(12)<<domain[(i*line) + (j*9) + k];}
+						else{ ou<<" ";ou<<left<<setw(12)<<domainHelper[(i*line) + (j*9) + k]<<left<<setw(12)<<domain[(i*line) + (j*9) + k];}
+				  }
+				  ou<<" "<<k<<"\n";
+				}
+				ou<<"\n";
+				
+				forr(j,ballCenterX - raza-1, ballCenterX + raza+1)
+					{   //cerr<<" j:"<<j<<" ";
+						
+					  
+						assert(i>=1 && i<(size_t)nrCellsY && j >=1 && j<(size_t)nrCellsX);
+						//size_t ds = (0.5 + i-ballCenterY)*(0.5+i-ballCenterY) + ( -0.5 + j-ballCenterX)*(-0.5+j-ballCenterX);
+						if(ballCellsB[i*(nrCellsX) + j]){
+							
+							//ballCells.insert(mp(i,j));
+							//ballCellsB[j + i*nrCellsX] = true;
+							
+						}else{
+							forn(k,9){
+
+								if(ballCellsB[((i+neighbours[k+9])*(nrCellsX))+((j+neighbours[k]))]){// boundary
+									if(domainHelper[(i*line) + (j*9) + op[k]]!=domain[((i+neighbours[k+9])*line)+((j+neighbours[k])*9)+op[k]]){
+										cerr<<"bounder collide error cylinder:"<< i<<" "<<j<<" "<<k<<"\n";
+										cerr<<(i+neighbours[k+9])<<" "<<(j+neighbours[k])<<" "<<op[k]<<"\n";
+										cerr<<domainHelper[(i*line) + (j*9) + op[k]]<<" "<<domain[((i+neighbours[k+9])*line)+((j+neighbours[k])*9)+op[k]]<<"\n";
+										exit(0);
+									}
+									++nnt;
+								}
+							}
+						}
+					}
+					//cerr<<"\n";
+				}
+				cerr<<"nnt collide:"<<nnt<<"\n";
+				cerr<<"nk:"<<nk<<"\n";
+				cerr<<"radius:"<<ballCells.size()<<"\n";
+		}
 
 		/**
 		* get the x component of velocity
@@ -289,7 +367,7 @@ class LatticeB{
 							if(nn==0)cerr<<j<<"|";
 							++nn;
 							ballCells.insert(mp(i,j));
-							ballCellsB[j + i*nrCellsX] = true;
+							ballCellsB[j + (i*nrCellsX)] = true;
 							cerr<<"0";
 						}else cerr<<"1";
 					}
@@ -298,6 +376,7 @@ class LatticeB{
 
 			forr(i,1,nrCellsY-1){
 				forr(j,1,nrCellsX-1){
+					if(ballCellsB[i*nrCellsX+j])continue;
 					for(int k=0;k<9;++k)						 
 						domain[k + i*line + j*9] = w[k];
 						// 0 1 2
@@ -305,16 +384,20 @@ class LatticeB{
 						// 6 5 4
 				}
 			}
-
+			int kk = 0;
 			for(auto p : ballCells){// px - Y, py - X
+			  bool ok = 0;
 					forn(k,9)
 						if(ballCells.count(mp(p.x+neighbours[9+k],p.y+neighbours[k]))==0){
 							rel[nk] = k + (p.x*line) + (p.y*9);
 							rel[nk+1] = ((k+4)%8) + ((p.x + neighbours[9+k])*line)+ ((p.y+neighbours[k])*9);
 							assert(((k+4)%8) == op[k]);
 							nk += 2;
+							ok = 1;
 						}
+					if(ok)++kk;
 				}
+				cerr<<"kk:"<<kk<<"\n";
 		}
 		
 
@@ -322,7 +405,7 @@ class LatticeB{
 		double dx, dt, acc , W; int rel[5000], rell[5000];
 		int neighbours[18] =  {-1,0,1,1,1,0,-1,-1,0,  1,1,1,0,-1,-1,-1,0,0};
 		size_t op[9] = {4,5,6,7,0,1,2,3,8};
-		double  w[9] = {1./36.,1./9., 1./36.,1./9., 1./36.,1./9., 1./36.,1./9., 4./9.};
+		double  w[9] = {(1./36.),(1./9.), (1./36.),(1./9.), (1./36.),(1./9.),( 1./36.),(1./9.), (4./9.)};
 		
 		double * domain, * domainHelper;
 		bool * ballCellsB;
